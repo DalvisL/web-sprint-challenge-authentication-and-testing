@@ -1,5 +1,7 @@
+const jwt = require("jsonwebtoken");
+const { JWT_SECRET } = require("../secrets"); // use this secret!
+
 module.exports = (req, res, next) => {
-  next();
   /*
     IMPLEMENT
 
