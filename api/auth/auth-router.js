@@ -2,7 +2,7 @@ const router = require('express').Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const Auth = require('./auth-model.js');
-const { JWT_SECRET } = require('../../config');
+const { JWT_SECRET, BCRYPT_ROUNDS } = require('../../config');
 const { checkUsernameExists } = require('./auth-middleware.js');
 
 router.post('/register', checkUsernameExists,  (req, res) => {
@@ -35,7 +35,7 @@ router.post('/register', checkUsernameExists,  (req, res) => {
   if (!username || !password) {
     res.status(400).json({ message: 'username and password required' });
   } else {
-    bcrypt.hash(password, 8, (err, hash) => {
+    bcrypt.hash(password, BCRYPT_ROUNDS, (err, hash) => {
       if (err) {
         res.status(500).json({ message: 'error hashing password' });
       } else {
@@ -54,7 +54,27 @@ router.post('/register', checkUsernameExists,  (req, res) => {
 });
 
 router.post('/login', (req, res) => {
-  res.end('implement login, please!');
+    if (!req.body.username || !req.body.password) {
+    res.status(400).json({ message: 'username and password required' });
+    } else {
+      Auth.findByUsername(req.body.username)
+        .then(([user]) => {
+          if (user && bcrypt.compareSync(req.body.password, user.password)) {
+            const token = buildToken(user);
+            res.status(200).json({
+              message: `welcome, ${user.username}`,
+              token,
+            })
+            console.log(`token: ${token}`)
+            console.log(req.headers)
+          } else {
+            res.status(401).json({ message: 'invalid credentials' });
+          }
+        })
+        .catch((err) => {
+          res.status(500).json({ message: err.message });
+        });
+    }
   /*
     IMPLEMENT
     You are welcome to build additional middlewares to help with the endpoint's functionality.
@@ -79,5 +99,16 @@ router.post('/login', (req, res) => {
       the response body should include a string exactly as follows: "invalid credentials".
   */
 });
+
+const buildToken = (user) => {
+  const payload = {
+    subject: user.id,
+    username: user.username,
+  };
+  const options = {
+    expiresIn: '1d',
+  };
+  return jwt.sign(payload, JWT_SECRET, options);
+};
 
 module.exports = router;
