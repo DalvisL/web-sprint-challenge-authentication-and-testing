@@ -1,7 +1,7 @@
 const db = require('../../data/dbConfig');
 
 const findById = async (id) => {
-    const user = await db('users').where('user_id', id).first();
+    const user = await db('users').where('id', id).first();
     return user;
 };
 

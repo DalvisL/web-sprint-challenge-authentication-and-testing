@@ -1,9 +1,11 @@
 const router = require('express').Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const {  }
+const Auth = require('./auth-model.js');
+const { JWT_SECRET } = require('../../config');
+const { checkUsernameExists } = require('./auth-middleware.js');
 
-router.post('/register', (req, res) => {
+router.post('/register', checkUsernameExists,  (req, res) => {
   /*
     IMPLEMENT
     You are welcome to build additional middlewares to help with the endpoint's functionality.
@@ -38,6 +40,13 @@ router.post('/register', (req, res) => {
         res.status(500).json({ message: 'error hashing password' });
       } else {
         req.body.password = hash;
+        Auth.register(req.body)
+          .then((user) => {
+            res.status(201).json(user);
+          })
+          .catch((err) => {
+            res.status(500).json({ message: err.message });
+          });
       }
     })
   }
